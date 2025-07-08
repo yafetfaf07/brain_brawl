@@ -1,14 +1,15 @@
 
 import './App.css'
 import SignUpPage from './pages/signup'
-import MainPage from './pages/mainpage'
+import Dashboard from './pages/dashboard'
+import { RouterProvider } from 'react-router'
+import routes from './routes/routes'
 function App() {
 
   return (
     <>
-    <div className='flex items-center justify-center'>
-      <MainPage/>
-    </div>
+   <RouterProvider router={routes} />
+ 
     </>
   )
 }
