@@ -1,7 +1,6 @@
 
 import './App.css'
-import SignUpPage from './pages/signup'
-import Dashboard from './pages/dashboard'
+
 import { RouterProvider } from 'react-router'
 import routes from './routes/routes'
 function App() {

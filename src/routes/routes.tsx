@@ -2,19 +2,33 @@ import { createBrowserRouter } from "react-router";
 import SignUpPage from "../pages/signup";
 import Dashboard from "../pages/dashboard";
 import Groups from "@/pages/groups";
+import AuthGuard from "@/pages/AuthGuard";
+
 const routes = createBrowserRouter([
   {
-    path: "/",
-    element:<SignUpPage />
-  },
- 
-  {
     path: "/dashboard",
-    element:<Dashboard /> 
+    element: (
+      <AuthGuard>
+        <Dashboard />
+      </AuthGuard>
+    ),
   },
   {
-    path:"/groups",
-    element:<Groups />
+    path: "/groups",
+    element: (
+      <AuthGuard>
+        <Groups />
+      </AuthGuard>
+    ),
+  },
+  {
+    path:'/',
+    element:(
+      <AuthGuard>
+        <SignUpPage/>
+      </AuthGuard>
+    )
   }
 ]);
+
 export default routes;

@@ -1,11 +1,17 @@
 import CompletedQuizCard from "@/components/CompletedQuizCard";
+import FlashCardSubPage from "@/components/FlashCardSubPage";
+import MaterialsSubPage from "@/components/MaterialsSubPage";
 import QuizCard from "@/components/QuizCard";
-import { Button } from "@/components/ui/button";
 import UpcomingQuizCard from "@/components/UpcomingQuizCard";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 
 const Groups = () => {
   const navigate = useNavigate();
+  const [quizzes, setquizzes] = useState<boolean>(true);
+  const [materials, setmaterials] = useState<boolean>(false);
+  const [flashcards, setflashcards] = useState<boolean>(false);
+
   return (
     <div className="">
       <div className="bg-white p-5 rounded-lg w-[100%]">
@@ -45,13 +51,34 @@ const Groups = () => {
             </div>
           </div>
           <div className="flex justify-between mt-5 bg-gray-300">
-            <div className="bg-gray-100 rounded-none text-black w-[32%] p-2 text-center">
+            <div
+              className="bg-gray-100 rounded-none text-black w-[32%] p-2 text-center"
+              onClick={() => {
+                setquizzes(true);
+                setmaterials(false);
+                setflashcards(false);
+              }}
+            >
               Quizzes
             </div>
-            <div className="bg-inherit text-black w-[32%] p-2 text-center">
+            <div
+              className="bg-inherit text-black w-[32%] p-2 text-center"
+              onClick={() => {
+                setquizzes(false);
+                setmaterials(true);
+                setflashcards(false);
+              }}
+            >
               Materials
             </div>
-            <div className="bg-inherit text-black w-[32%] p-2 text-center">
+            <div
+              className="bg-inherit text-black w-[32%] p-2 text-center"
+              onClick={() => {
+                setquizzes(false);
+                setmaterials(false);
+                setflashcards(true);
+              }}
+            >
               Flashcards
             </div>
           </div>
@@ -63,7 +90,10 @@ const Groups = () => {
               </span>
             </div>
           </div>
-          <div className="flex flex-col">
+          {
+            quizzes ? (<div>
+
+<div className="flex flex-col">
             <QuizCard />
             <QuizCard />
             <QuizCard />
@@ -103,7 +133,10 @@ const Groups = () => {
             <UpcomingQuizCard />
             <UpcomingQuizCard />
             <UpcomingQuizCard />
-          </div>
+          </div>              
+            </div>) : materials ? (<MaterialsSubPage/>) : flashcards ?(<FlashCardSubPage/>) : <div></div>
+          }
+          
         </div>
       </div>
     </div>

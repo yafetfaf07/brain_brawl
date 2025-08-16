@@ -1,9 +1,26 @@
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router";
+import { supabase } from "@/utils/supabase";
+import { useEffect } from "react";
 const DashBoardCard = () => {
+  useEffect(() => {
+      async function fetchData () {
+        const {data,error} = await supabase.from("user").select("*");
+        if(data) {
+          console.log("Data from supabase: ",data)
+        }
+        else if(error) {
+          console.log("Error from supabase: ",error);
+          
+        }
+
+      }
+
+    fetchData();
+  },[])
   const navigate = useNavigate();
   return (
-    <div className="bg-white w-[93%] p-5 rounded-lg m-2 md:w-[550px] shadow-2xl">
+    <div className="bg-white w-[93%] p-5 rounded-lg m-2 md:w-[400px] shadow-2xl md:ml-10 md:mt-10 ">
       <div className="flex justify-between items-center p-1">
         <h2 className="font-bold text-2xl">Javascript Ninjas</h2>
         <div className="bg-green-100 rounded-4xl w-14 border-1 border-green-20 flex items-center justify-center">
