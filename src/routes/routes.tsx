@@ -1,34 +1,35 @@
-import { createBrowserRouter } from "react-router";
+// routes.tsx
+import { createBrowserRouter, Navigate } from "react-router";
 import SignUpPage from "../pages/signup";
 import Dashboard from "../pages/dashboard";
 import Groups from "@/pages/groups";
-import AuthGuard from "@/pages/AuthGuard";
+import ProtectedRoute from "./protectedRoute"
 
 const routes = createBrowserRouter([
   {
+    path: "/",
+    element: <Navigate to="/login" />, // default route
+  },
+  {
     path: "/dashboard",
     element: (
-      <AuthGuard>
+      <ProtectedRoute>
         <Dashboard />
-      </AuthGuard>
+      </ProtectedRoute>
     ),
   },
   {
     path: "/groups",
     element: (
-      <AuthGuard>
+      <ProtectedRoute>
         <Groups />
-      </AuthGuard>
+      </ProtectedRoute>
     ),
   },
   {
-    path:'/',
-    element:(
-      <AuthGuard>
-        <SignUpPage/>
-      </AuthGuard>
-    )
-  }
+    path: "/login",
+    element: <SignUpPage />,
+  },
 ]);
 
 export default routes;

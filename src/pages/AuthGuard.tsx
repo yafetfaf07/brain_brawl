@@ -1,19 +1,19 @@
 import { useEffect, useState, type JSX } from "react";
 import { supabase } from "../utils/supabase";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 
 function AuthGuard({ children }: { children: JSX.Element }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
 
-      if (session) {
-        navigate("/dashboard");
-      } else {
-        navigate("/");
+      if (!session) {
+        // If no session, redirect to login
+        navigate("/login", { replace: true, state: { from: location } });
       }
       setLoading(false);
     }
@@ -24,15 +24,13 @@ function AuthGuard({ children }: { children: JSX.Element }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate("/dashboard");
-      } else {
-        navigate("/");
+      if (!session) {
+        navigate("/login", { replace: true });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location]);
 
   if (loading) return <p>Loading...</p>;
 

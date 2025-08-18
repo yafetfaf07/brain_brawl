@@ -3,15 +3,21 @@ import DashboardNotify from "@/components/DashboardNotify";
 import InvitedDashboardCard from "@/components/InvitedDashboardCard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/utils/supabase";
-const dashboard = () => {
+import { useNavigate } from "react-router";
+const Dashboard = () => {
+  const navigate = useNavigate();
+
   const logout = async() => {
     const { error } = await supabase.auth.signOut();
-
+    
     if(error) {
       console.error("Error: ",error);
     }
     else {
+      localStorage.clear();
+        navigate('/');
       console.log("successfully signed out");
+      
     }
   }
   return (
@@ -58,4 +64,4 @@ const dashboard = () => {
   );
 };
 
-export default dashboard;
+export default Dashboard;

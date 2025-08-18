@@ -1,15 +1,32 @@
 import CompletedQuizCard from "@/components/CompletedQuizCard";
 import FlashCardSubPage from "@/components/FlashCardSubPage";
-import MaterialsSubPage from "@/components/MaterialsSubPage";
 import QuizCard from "@/components/QuizCard";
 import UpcomingQuizCard from "@/components/UpcomingQuizCard";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
+import { ArrowLeft, EllipsisVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Groups = () => {
   const navigate = useNavigate();
   const [quizzes, setquizzes] = useState<boolean>(true);
-  const [materials, setmaterials] = useState<boolean>(false);
   const [flashcards, setflashcards] = useState<boolean>(false);
 
   return (
@@ -17,16 +34,36 @@ const Groups = () => {
       <div className="bg-white p-5 rounded-lg w-[100%]">
         <div className="flex justify-between">
           <div
-            className="bg-white text-black cursor-pointer border-1 border-gray-300 p-1 rounded-lg w-[47%] hover:shadow-lg"
+            className="bg-gray-200 rounded-full p-2 text-black hover:shadow-lg"
             onClick={() => {
               navigate("/dashboard");
             }}
           >
-            Back to Dashboard
+           <ArrowLeft/>
           </div>
-          <div className="bg-[#f9f686] text-amber-800 w-[47%] p-1 font-semibold flex justify-between items-center rounded-lg md:w-20 text-[15px]">
-            View Leaderboard
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger><EllipsisVertical/></DropdownMenuTrigger>
+            <DropdownMenuContent>
+             
+              <DropdownMenuItem className="bg-purple-200 text-purple-700">Create Quiz</DropdownMenuItem>
+              <Drawer>
+  <DrawerTrigger>Open</DrawerTrigger>
+  <DrawerContent>
+    <DrawerHeader>
+      <DrawerTitle>Are you absolutely sure?</DrawerTitle>
+      <DrawerDescription>This action cannot be undone.</DrawerDescription>
+    </DrawerHeader>
+    <DrawerFooter>
+      <Button>Submit</Button>
+      <DrawerClose>
+        <Button variant="outline">Cancel</Button>
+      </DrawerClose>
+    </DrawerFooter>
+  </DrawerContent>
+</Drawer>
+              <DropdownMenuItem className="bg-yellow-200 text-yellow-700">View LeaderBoard</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div>
           <h2 className="text-2xl font-bold mt-2">Javascript Ninjas</h2>
@@ -55,7 +92,6 @@ const Groups = () => {
               className="bg-gray-100 rounded-none text-black w-[32%] p-2 text-center"
               onClick={() => {
                 setquizzes(true);
-                setmaterials(false);
                 setflashcards(false);
               }}
             >
@@ -65,17 +101,6 @@ const Groups = () => {
               className="bg-inherit text-black w-[32%] p-2 text-center"
               onClick={() => {
                 setquizzes(false);
-                setmaterials(true);
-                setflashcards(false);
-              }}
-            >
-              Materials
-            </div>
-            <div
-              className="bg-inherit text-black w-[32%] p-2 text-center"
-              onClick={() => {
-                setquizzes(false);
-                setmaterials(false);
                 setflashcards(true);
               }}
             >
@@ -90,53 +115,55 @@ const Groups = () => {
               </span>
             </div>
           </div>
-          {
-            quizzes ? (<div>
+          {quizzes ? (
+            <div>
+              <div className="flex flex-col">
+                <QuizCard />
+                <QuizCard />
+                <QuizCard />
+                <QuizCard />
+                <QuizCard />
+                <QuizCard />
+                <QuizCard />
+              </div>
+              <div className="flex mt-5 justify-between">
+                <h2 className="text-2xl font-bold">Completed Quizzes</h2>
+                <div className="bg-green-100 rounded-4xl  border-1 border-green-20 flex items-center justify-center p-2">
+                  <span className="text-green-700 text-[12px] font-medium">
+                    3 completed
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <CompletedQuizCard />
+                <CompletedQuizCard />
+                <CompletedQuizCard />
+                <CompletedQuizCard />
+                <CompletedQuizCard />
+              </div>
 
-<div className="flex flex-col">
-            <QuizCard />
-            <QuizCard />
-            <QuizCard />
-            <QuizCard />
-            <QuizCard />
-            <QuizCard />
-            <QuizCard />
-          </div>
-          <div className="flex mt-5 justify-between">
-            <h2 className="text-2xl font-bold">Completed Quizzes</h2>
-            <div className="bg-green-100 rounded-4xl  border-1 border-green-20 flex items-center justify-center p-2">
-              <span className="text-green-700 text-[12px] font-medium">
-                3 completed
-              </span>
+              <div className="flex mt-5 justify-between">
+                <h2 className="text-2xl font-bold">Upcoming Quizzes</h2>
+                <div className="bg-blue-100 rounded-4xl  border-1 border-green-20 flex items-center justify-center p-2">
+                  <span className="text-blue-700 text-[12px] font-medium">
+                    3 upcoming
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <UpcomingQuizCard />
+                <UpcomingQuizCard />
+                <UpcomingQuizCard />
+                <UpcomingQuizCard />
+                <UpcomingQuizCard />
+                <UpcomingQuizCard />
+              </div>
             </div>
-          </div>
-          <div className="flex flex-col">
-            <CompletedQuizCard />
-            <CompletedQuizCard />
-            <CompletedQuizCard />
-            <CompletedQuizCard />
-            <CompletedQuizCard />
-          </div>
-
-          <div className="flex mt-5 justify-between">
-            <h2 className="text-2xl font-bold">Upcoming Quizzes</h2>
-            <div className="bg-blue-100 rounded-4xl  border-1 border-green-20 flex items-center justify-center p-2">
-              <span className="text-blue-700 text-[12px] font-medium">
-                3 upcoming
-              </span>
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <UpcomingQuizCard />
-            <UpcomingQuizCard />
-            <UpcomingQuizCard />
-            <UpcomingQuizCard />
-            <UpcomingQuizCard />
-            <UpcomingQuizCard />
-          </div>              
-            </div>) : materials ? (<MaterialsSubPage/>) : flashcards ?(<FlashCardSubPage/>) : <div></div>
-          }
-          
+          ) : flashcards ? (
+            <FlashCardSubPage />
+          ) : (
+            <div></div>
+          )}
         </div>
       </div>
     </div>

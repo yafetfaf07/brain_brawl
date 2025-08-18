@@ -1,10 +1,18 @@
 import { supabase } from "@/utils/supabase";
-import  { useState } from "react";
-
+import  { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 const SignUp = () => {
+  const navigate = useNavigate();
   const [name, setname] = useState<string>("");
   const [email, setemail] = useState<string>("");
   const [password, setpassword] = useState<string>("");
+const accessToken = localStorage.getItem("accessToken");
+const refreshToken = localStorage.getItem("refreshToken");
+  useEffect(() => {
+    if(accessToken && refreshToken) {
+      navigate('/dashboard');
+    }
+  },[navigate, accessToken, refreshToken])
 
 const signup = async() => {
   const {data, error} = await supabase.auth.signUp({
