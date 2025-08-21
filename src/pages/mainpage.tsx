@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import DashboardNotify from "../components/DashboardNotify";
-import DashBoardCard from "../components/DashBoardCard";
 
 const MainPage = () => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -82,7 +81,6 @@ const changedDate = new Date(date);
         <div>3 Pending</div>
       </div>
       <div className="card-wrappers">
-        <DashBoardCard />
       </div>
 
       <dialog
