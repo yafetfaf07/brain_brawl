@@ -20,8 +20,9 @@ const signup = async() => {
     password:password
   })
   if(data.user) {
-    console.log(data);
-    const{data:datas}=await supabase.from('user').insert({name,email})
+    console.log(data.user.id);
+    const uid=data.user.id
+    const{data:datas}=await supabase.from('user').insert({name,email,uid})
     if(datas) {
       console.log("Data saved successfully inside");
       

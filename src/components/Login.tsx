@@ -20,7 +20,8 @@ const Login = () => {
     }
 
     if (data.session) {
-      // ✅ Save tokens in localStorage
+console.log("User Info: ",data);
+
       localStorage.setItem("accessToken", data.session.access_token);
       localStorage.setItem("refreshToken", data.session.refresh_token);
 
