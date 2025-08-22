@@ -19,7 +19,7 @@ const routes = createBrowserRouter([
     ),
   },
   {
-    path: "/groups",
+    path: "/groups/:id",
     element: (
       <ProtectedRoute>
         <Groups />

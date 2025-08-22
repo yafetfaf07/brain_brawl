@@ -1,14 +1,15 @@
 import { Button } from "./ui/button";
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 interface DashboardCardProps {
   names:string
   role:string,
   description:string
+  id:string
 }
-const DashBoardCard:React.FC<DashboardCardProps> = ({names,role,description}) => {
+const DashBoardCard:React.FC<DashboardCardProps> = ({names,role,description,id}) => {
 
-  const navigate = useNavigate();
   return (
+    <Link to={`/groups/${id}`}>
     <div className="bg-white w-[93%] p-5 rounded-lg m-2 md:w-[400px] shadow-2xl md:ml-10 md:mt-10 ">
       <div className="flex justify-between items-center p-1">
         <h2 className="font-bold text-2xl">{names}</h2>
@@ -26,11 +27,11 @@ const DashBoardCard:React.FC<DashboardCardProps> = ({names,role,description}) =>
         <span>⭐️⭐️⭐️</span>
       </div>
       <Button className="bg-black text-white border-1 w-[100%] mt-2 cursor-pointer" onClick={() => {
-        navigate('/groups');
       }}>
         View Group
       </Button>
     </div>
+    </Link>
   );
 };
 

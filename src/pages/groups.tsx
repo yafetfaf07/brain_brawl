@@ -3,12 +3,11 @@ import FlashCardSubPage from "@/components/FlashCardSubPage";
 import QuizCard from "@/components/QuizCard";
 import UpcomingQuizCard from "@/components/UpcomingQuizCard";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -20,15 +19,50 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@/components/ui/drawer"
-import { ArrowLeft, EllipsisVertical } from "lucide-react";
+} from "@/components/ui/drawer";
+import { ArrowLeft, EllipsisVertical, Mail, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/utils/supabase";
 
 const Groups = () => {
+  const {id} = useParams<{id:string}>();
   const navigate = useNavigate();
   const [quizzes, setquizzes] = useState<boolean>(true);
   const [flashcards, setflashcards] = useState<boolean>(false);
+  const[selectedMembers,setselectedMembers] = useState<string[]>([]);
+  const[emailValue,setemailValue] = useState<string>("");
+  const addMembers = () => {
+    setselectedMembers((prevItems) => [...prevItems, emailValue])
+    setemailValue("");
+  }
 
+  const inviteGroup = async() => {
+    const{data:userData,error:userError} = await supabase.from('user').select("id,email").in("email",selectedMembers);
+    if(userError) {
+      console.error("Error in finding user emails: ",userError)
+      return
+    }
+    if(userData?.length==0) {
+      console.error("No data found");
+      return
+    }
+    const insertUser = userData.map((user) => ({
+      uid: user.id,
+      gid: id,
+      role:"user",
+      hasJoined:true
+    }));
+    const{error:insertError} = await supabase.from('usergroup').insert(insertUser);
+    if(insertError) {
+      console.error("Error in inserting user into usergroup: ", insertError)
+    }
+    else {
+      console.log("Members successfully added");
+      
+    }
+
+  }
   return (
     <div className="">
       <div className="bg-white p-5 rounded-lg w-[100%]">
@@ -39,29 +73,63 @@ const Groups = () => {
               navigate("/dashboard");
             }}
           >
-           <ArrowLeft/>
+            <ArrowLeft />
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger><EllipsisVertical/></DropdownMenuTrigger>
+            <DropdownMenuTrigger>
+              <EllipsisVertical />
+            </DropdownMenuTrigger>
             <DropdownMenuContent>
-             
-              <DropdownMenuItem className="bg-purple-200 text-purple-700">Create Quiz</DropdownMenuItem>
+              <DropdownMenuItem className="bg-purple-200 text-purple-700">
+                Create Quiz
+              </DropdownMenuItem>
               <Drawer>
-  <DrawerTrigger>Open</DrawerTrigger>
-  <DrawerContent>
-    <DrawerHeader>
-      <DrawerTitle>Are you absolutely sure?</DrawerTitle>
-      <DrawerDescription>This action cannot be undone.</DrawerDescription>
-    </DrawerHeader>
-    <DrawerFooter>
-      <Button>Submit</Button>
-      <DrawerClose>
-        <Button variant="outline">Cancel</Button>
-      </DrawerClose>
-    </DrawerFooter>
-  </DrawerContent>
-</Drawer>
-              <DropdownMenuItem className="bg-yellow-200 text-yellow-700">View LeaderBoard</DropdownMenuItem>
+                <DrawerTrigger>Add Members</DrawerTrigger>
+                <DrawerContent>
+                  <DrawerHeader>
+                    <DrawerTitle>Add Members to Group</DrawerTitle>
+                    <span className="text-gray-400">
+                      Invite new members to join your group and start learning
+                      together.
+                    </span>
+                    <DrawerDescription>
+                      <div className="flex items-center">
+                        <Mail className="text-black mr-2 mb-2" /> <span className="text-black mb-2 font-medium">Invite By Email</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Input value={emailValue} placeholder="Enter email" onChange={(e) => setemailValue(e.target.value)}/>
+                        <Button className="bg-white border-gray-200 border-1 ml-2" onClick={() => addMembers()}><Plus className="text-gray-700"/></Button>
+                      </div>
+                      <div>
+                        <span className="text-left">Selected Members({selectedMembers.length})</span>
+                        <div className="rounded-sm p-2 flex border-2 border-gray-200">
+                          {
+                            selectedMembers.map((d) => {
+                              return <div className="rounded-2xl border-1 border-gray-600 p-2 m-2 ">
+                                <span className="text-black font-semibold">{d}</span>
+                                <span className="font-semibold ml-2" onClick={() => {
+                                  setselectedMembers(selectedMembers.filter((m) => m!=d))
+                                }}>x</span>
+                              </div>
+                            })
+                          }
+                        </div>
+                      </div>
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <DrawerFooter>
+                    <Button className="bg-gradient-to-r from-violet-500 to indigo-400" onClick={() => {
+                      inviteGroup();
+                    }}>Add Members</Button>
+                    <DrawerClose>
+                      <Button variant="outline">Cancel</Button>
+                    </DrawerClose>
+                  </DrawerFooter>
+                </DrawerContent>
+              </Drawer>
+              <DropdownMenuItem className="bg-yellow-200 text-yellow-700">
+                View LeaderBoard
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

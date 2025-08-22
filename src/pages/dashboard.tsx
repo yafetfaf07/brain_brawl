@@ -171,6 +171,7 @@ const Dashboard = () => {
         {groups.length > 0 ? (
           groups.map((d) => (
             <DashBoardCard
+            id={d.group.id}
               key={d.group.id} // Use the group ID as the key
               names={d.group.name}
               role={d.role}
