@@ -1,9 +1,9 @@
-import CompletedQuizCard from "@/components/CompletedQuizCard";
 import FlashCardSubPage from "@/components/FlashCardSubPage";
 import QuizCard from "@/components/QuizCard";
-import UpcomingQuizCard from "@/components/UpcomingQuizCard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { extractTextFromPDF } from "@/utils/pdfreader";
+import { GoogleGenAI } from "@google/genai";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,49 +20,208 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { ArrowLeft, EllipsisVertical, Mail, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase";
 
 const Groups = () => {
-  const {id} = useParams<{id:string}>();
+  type QuizDatas = {
+    created_at: string;
+    desc: string;
+    file_url: string;
+    flashcard: null;
+    gid: string;
+    id: string;
+    name: string;
+    questions: [];
+    uid: string;
+  };
+
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [quizzes, setquizzes] = useState<boolean>(true);
   const [flashcards, setflashcards] = useState<boolean>(false);
-  const[selectedMembers,setselectedMembers] = useState<string[]>([]);
-  const[emailValue,setemailValue] = useState<string>("");
-  const addMembers = () => {
-    setselectedMembers((prevItems) => [...prevItems, emailValue])
-    setemailValue("");
-  }
+  const [selectedMembers, setselectedMembers] = useState<string[]>([]);
+  const [emailValue, setemailValue] = useState<string>("");
+  const [file, setfile] = useState<File | null>(null);
+  const [qtitle, setqtitle] = useState<string>("");
+  const [qdesc, setqdesc] = useState<string>("");
+  const [gname, setgname] = useState<string>("");
+  const [gdesc, setgdesc] = useState<string>("");
+  const [quizData, setquizData] = useState<QuizDatas[]>([]);
+  const [, setquizName] = useState<string>();
+  const [, setquizdesc] = useState<string>();
+  const [totalNumberOfUsers, setotalNumberOfUsers] = useState<number>(0);
 
-  const inviteGroup = async() => {
-    const{data:userData,error:userError} = await supabase.from('user').select("id,email").in("email",selectedMembers);
-    if(userError) {
-      console.error("Error in finding user emails: ",userError)
-      return
+  useEffect(() => {
+    const groupData = async () => {
+      const { data, error } = await supabase
+        .from("group")
+        .select("*")
+        .eq("id", id);
+      if (error) {
+        console.error("Error in fetching group data: ", error);
+        return;
+      } else if (data) {
+        console.log("Group data fetched successfully: ", data);
+        setgname(data[0].name);
+        setgdesc(data[0].description);
+      }
+    };
+    const getQuizzes = async () => {
+      const { data, error } = await supabase
+        .from("quiz")
+        .select("*")
+        .eq("gid", id);
+      if (error) {
+        console.error("Error in fetching group data: ", error);
+        return;
+      } else if (data) {
+        console.log("Quiz data fetched successfully: ", data);
+        setquizName(data[0].name);
+        setquizData(data);
+        setquizdesc(data[0].desc);
+      }
+    };
+    const getTotalNumberOfUsers= async() => {
+      const { count, error } = await supabase
+        .from('usergroup')
+        .select("gid", { count: "exact" }).eq("gid",id);
+      if (error) {
+        console.error("Error fetching total number of users: ", error);
+      } else {
+        console.log("Total number of users in a given group: ", count);
+        setotalNumberOfUsers(count||0);
+      }
     }
-    if(userData?.length==0) {
+
+    groupData();
+    getQuizzes();
+    getTotalNumberOfUsers();
+  }, []);
+
+  const ai = new GoogleGenAI({
+    apiKey: "AIzaSyAPCr2YB4PdVLmMb0LhocHJDiYoMKtv2Tg",
+  });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setfile(e.target.files[0]);
+    }
+    console.log(e.target.files?.[0]);
+  };
+
+  // Add member list
+  const addMembers = () => {
+    setselectedMembers((prevItems) => [...prevItems, emailValue]);
+    setemailValue("");
+  };
+
+  //Upload file to supabase
+  const handleUploadToSupabase = async () => {
+    if (!file) return alert("Please select a pdf file first");
+
+    try {
+      const { data: fileUrl, error } = await supabase.storage
+        .from("study-pal-pdfs")
+        .upload(`questions/${Date.now()} -${file.name}`, file);
+      if (error) throw error;
+
+      console.log("Uploaded file path: ", fileUrl.path);
+      // const { data: urlData } = await supabase.storage
+      //     .from("study-pal-pdfs")
+      //     .getPublicUrl(data.path);
+      const pdfText = await extractTextFromPDF(file);
+
+      if (pdfText) {
+        console.log("Content of pdf: ", pdfText);
+      }
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash-001",
+        contents: `
+  Based on the following PDF content, create a list of multiple-choice questions.
+  Format the output exactly like this example:
+  [
+    { q1: { "question": "What is your name?", "A": "Mr x", "B": "Mr y", "C": "Mr z", "D": "None", "ans": "A" } }
+  ]
+
+  Content:
+  ${pdfText}
+  `,
+      });
+
+      if (response.text) {
+        console.log(response.text);
+        let rawText = response.text.trim();
+        rawText = rawText.replace(/```json|```/g, "").trim();
+        const jsonQuestion = JSON.parse(rawText);
+        const quiz = {
+          name: qtitle,
+          desc: qdesc,
+          questions: jsonQuestion,
+          gid: id,
+          file_url: fileUrl.fullPath,
+        };
+        const { data, error } = await supabase
+          .from("quiz")
+          .insert(quiz)
+          .select("*");
+
+        if (error) {
+          console.error("Error happened when inserting quiz: ", error);
+          return;
+        } else if (data) {
+          console.log("Successfully inserted quiz: ", data);
+          setquizData(jsonQuestion);
+        }
+      }
+
+      // const cleaned = rawText.replace(/```json|```/g, "").trim();
+      // setQuestions(JSON.parse(cleaned));
+    } catch (error) {
+      console.error("Error processing file:", error);
+      alert("Failed to process PDF or generate questions");
+    }
+  };
+
+  //For adding users to groups
+  const inviteGroup = async () => {
+    const { data: userData, error: userError } = await supabase
+      .from("user")
+      .select("id,email")
+      .in("email", selectedMembers);
+    if (userError) {
+      console.error("Error in finding user emails: ", userError);
+      return;
+    }
+    if (userData?.length == 0) {
       console.error("No data found");
-      return
+      return;
     }
     const insertUser = userData.map((user) => ({
       uid: user.id,
       gid: id,
-      role:"user",
-      hasJoined:true
+      role: "user",
+      hasJoined: true,
     }));
-    const{error:insertError} = await supabase.from('usergroup').insert(insertUser);
-    if(insertError) {
-      console.error("Error in inserting user into usergroup: ", insertError)
-    }
-    else {
+    const { error: insertError } = await supabase
+      .from("usergroup")
+      .insert(insertUser);
+    if (insertError) {
+      console.error("Error in inserting user into usergroup: ", insertError);
+    } else {
       console.log("Members successfully added");
-      
     }
-
-  }
+  };
   return (
     <div className="">
       <div className="bg-white p-5 rounded-lg w-[100%]">
@@ -80,9 +239,44 @@ const Groups = () => {
               <EllipsisVertical />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem className="bg-purple-200 text-purple-700">
-                Create Quiz
-              </DropdownMenuItem>
+              <Dialog>
+                <DialogTrigger className="bg-purple-200 text-purple-700">
+                  Create Quiz
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Quiz</DialogTitle>
+                    <span>Set up your quiz details and settings.</span>
+                    <DialogDescription>
+                      <div>
+                        <span>Quiz Title</span>
+                        <Input
+                          placeholder="e.g. Introduction to Project Management"
+                          onChange={(e) => setqtitle(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <span>Description</span>
+                        <Input
+                          placeholder="e.g. Introduction to Project Management"
+                          onChange={(e) => setqdesc(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <span>Choose files</span>
+                        <input
+                          type="file"
+                          onChange={(e) => handleFileChange(e)}
+                        />
+                        <Button onClick={() => handleUploadToSupabase()}>
+                          Confirm file{" "}
+                        </Button>
+                      </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
+
               <Drawer>
                 <DrawerTrigger>Add Members</DrawerTrigger>
                 <DrawerContent>
@@ -94,35 +288,68 @@ const Groups = () => {
                     </span>
                     <DrawerDescription>
                       <div className="flex items-center">
-                        <Mail className="text-black mr-2 mb-2" /> <span className="text-black mb-2 font-medium">Invite By Email</span>
+                        <Mail className="text-black mr-2 mb-2" />{" "}
+                        <span className="text-black mb-2 font-medium">
+                          Invite By Email
+                        </span>
                       </div>
                       <div className="flex items-center">
-                        <Input value={emailValue} placeholder="Enter email" onChange={(e) => setemailValue(e.target.value)}/>
-                        <Button className="bg-white border-gray-200 border-1 ml-2" onClick={() => addMembers()}><Plus className="text-gray-700"/></Button>
+                        <Input
+                          value={emailValue}
+                          placeholder="Enter email"
+                          onChange={(e) => setemailValue(e.target.value)}
+                        />
+                        <Button
+                          className="bg-white border-gray-200 border-1 ml-2"
+                          onClick={() => addMembers()}
+                        >
+                          <Plus className="text-gray-700" />
+                        </Button>
                       </div>
                       <div>
-                        <span className="text-left">Selected Members({selectedMembers.length})</span>
+                        <span className="text-left">
+                          Selected Members({selectedMembers.length})
+                        </span>
                         <div className="rounded-sm p-2 flex border-2 border-gray-200">
-                          {
-                            selectedMembers.map((d) => {
-                              return <div className="rounded-2xl border-1 border-gray-600 p-2 m-2 ">
-                                <span className="text-black font-semibold">{d}</span>
-                                <span className="font-semibold ml-2" onClick={() => {
-                                  setselectedMembers(selectedMembers.filter((m) => m!=d))
-                                }}>x</span>
+                          {selectedMembers.map((d) => {
+                            return (
+                              <div className="rounded-2xl border-1 border-gray-600 p-2 m-2 ">
+                                <span className="text-black font-semibold">
+                                  {d}
+                                </span>
+                                <span
+                                  className="font-semibold ml-2"
+                                  onClick={() => {
+                                    setselectedMembers(
+                                      selectedMembers.filter((m) => m != d)
+                                    );
+                                  }}
+                                >
+                                  x
+                                </span>
                               </div>
-                            })
-                          }
+                            );
+                          })}
                         </div>
                       </div>
                     </DrawerDescription>
                   </DrawerHeader>
                   <DrawerFooter>
-                    <Button className="bg-gradient-to-r from-violet-500 to indigo-400" onClick={() => {
-                      inviteGroup();
-                    }}>Add Members</Button>
+                    <div className="flex justify-center">
+                      <Button
+                        className="bg-gradient-to-r from-violet-500 to-red-400 w-[80%] text-center md:w-[35%]"
+                        onClick={() => {
+                          inviteGroup();
+                        }}
+                      >
+                        Add Members
+                      </Button>
+                    </div>
+
                     <DrawerClose>
-                      <Button variant="outline">Cancel</Button>
+                      <Button variant="outline" className="w-[80%] md:w-[35%]">
+                        Cancel
+                      </Button>
                     </DrawerClose>
                   </DrawerFooter>
                 </DrawerContent>
@@ -134,24 +361,17 @@ const Groups = () => {
           </DropdownMenu>
         </div>
         <div>
-          <h2 className="text-2xl font-bold mt-2">Javascript Ninjas</h2>
-          <p className="text-[15px] text-gray-400 ">
-            Mastering modern Javascript through interactive quizzes and
-            challenges
-          </p>
+          <h2 className="text-2xl font-bold mt-2">{gname}</h2>
+          <p className="text-[15px] text-gray-400 ">{gdesc}</p>
           <div className="flex justify-around mt-2">
             <div className="flex flex-col">
-              <span className="text-violet-600 font-bold text-2xl">25</span>
+              <span className="text-violet-600 font-bold text-2xl">{totalNumberOfUsers}</span>
               <span className="text-gray-600">Members</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-orange-600 font-bold text-2xl">156</span>
-
-              <span className="text-gray-600">Members</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-green-600 font-bold text-2xl">8/15</span>
-
+              <span className="text-green-600 font-bold text-2xl">
+                {quizData.length}
+              </span>
               <span className="text-gray-600">Quizzes</span>
             </div>
           </div>
@@ -175,56 +395,23 @@ const Groups = () => {
               Flashcards
             </div>
           </div>
-          <div className="flex mt-5 justify-between">
-            <h2 className="text-2xl font-bold">Current Quizzes</h2>
-            <div className="bg-orange-100 rounded-4xl w-14 border-1 border-green-20 flex items-center justify-center">
-              <span className="text-orange-700 text-[12px] font-medium">
-                2 active
-              </span>
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold">Current Quizzes</h2>
           {quizzes ? (
             <div>
               <div className="flex flex-col">
-                <QuizCard />
-                <QuizCard />
-                <QuizCard />
-                <QuizCard />
-                <QuizCard />
-                <QuizCard />
-                <QuizCard />
-              </div>
-              <div className="flex mt-5 justify-between">
-                <h2 className="text-2xl font-bold">Completed Quizzes</h2>
-                <div className="bg-green-100 rounded-4xl  border-1 border-green-20 flex items-center justify-center p-2">
-                  <span className="text-green-700 text-[12px] font-medium">
-                    3 completed
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <CompletedQuizCard />
-                <CompletedQuizCard />
-                <CompletedQuizCard />
-                <CompletedQuizCard />
-                <CompletedQuizCard />
-              </div>
-
-              <div className="flex mt-5 justify-between">
-                <h2 className="text-2xl font-bold">Upcoming Quizzes</h2>
-                <div className="bg-blue-100 rounded-4xl  border-1 border-green-20 flex items-center justify-center p-2">
-                  <span className="text-blue-700 text-[12px] font-medium">
-                    3 upcoming
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <UpcomingQuizCard />
-                <UpcomingQuizCard />
-                <UpcomingQuizCard />
-                <UpcomingQuizCard />
-                <UpcomingQuizCard />
-                <UpcomingQuizCard />
+                {quizData && quizData.length > 0 ? (
+                  quizData.map((d, i) => (
+                    <QuizCard
+                      key={i}
+                      name={d.name}
+                      desc={d.desc}
+                      time={d.created_at}
+                      length={quizData[0].questions.length}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500">Quizzes not found</p>
+                )}
               </div>
             </div>
           ) : flashcards ? (
