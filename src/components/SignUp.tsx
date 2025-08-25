@@ -25,7 +25,8 @@ const signup = async() => {
     const{data:datas}=await supabase.from('user').insert({name,email,uid})
     if(datas) {
       console.log("Data saved successfully inside");
-      
+      navigate('/dashboard');
+
     }
   }
   else if(error) {

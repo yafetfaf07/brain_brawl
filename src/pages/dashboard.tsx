@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Define the type for the Supabase JWT payload
 type SupabaseToken = {
@@ -41,6 +42,7 @@ const Dashboard = () => {
   const [gname, setgname] = useState<string>("");
   const [gdesc, setgdesc] = useState<string>("");
   const [name, setname] = useState<string>("");
+  const [gdata,setgdata]=useState<boolean>(true);
   // Correctly initialize the groups state as an empty array
   const [groups, setgroups] = useState<UserGroups[]>([]);
 
@@ -98,6 +100,7 @@ const Dashboard = () => {
         console.error("Error fetching groups with roles:", groupError);
       } else if (userGroups) {
         console.log("Groups with roles for user:", userGroups);
+        setgdata(false);
         // Assert the data type to match the state type
         setgroups(userGroups as unknown as UserGroups[]);
       }
@@ -168,19 +171,23 @@ const Dashboard = () => {
 
       <div className="flex flex-col items-center justify-center md:flex-row flex-wrap md:justify-normal ">
         {/* Conditional rendering for groups */}
-        {groups.length > 0 ? (
-          groups.map((d) => (
-            <DashBoardCard
-            id={d.group.id}
-              key={d.group.id} // Use the group ID as the key
-              names={d.group.name}
-              role={d.role}
-              description={d.group.description}
-            />
-          ))
-        ) : (
-          <p className="text-center text-lg mt-10">No groups found.</p>
-        )}
+
+        {
+          gdata ? (<Skeleton className="w-[93%] md:w-[400px] rounded-full bg-red-400"/>) :groups.length > 0 ? (
+            groups.map((d) => (
+              <DashBoardCard
+              id={d.group.id}
+                key={d.group.id} // Use the group ID as the key
+                names={d.group.name}
+                role={d.role}
+                description={d.group.description}
+              />
+            ))
+          ) : (
+            <p className="text-center text-lg mt-10">No groups found.</p>
+          )
+        }
+      
       </div>
       <h2 className="text-center text-2xl font-semibold m-5">
         Group Invitations
