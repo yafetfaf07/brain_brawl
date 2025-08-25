@@ -11,12 +11,12 @@ interface QuestionCardProps {
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({ no, question, a, b, c, d, ans }) => {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  // const [, setSelectedOption] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleOptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedOption(event.target.value);
-  };
+  // const handleOptionChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   setSelectedOption(event.target.value);
+  // };
 
   const handleSubmit = () => {
     setIsSubmitted(true);
