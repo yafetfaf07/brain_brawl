@@ -4,7 +4,7 @@ import SignUpPage from "../pages/signup";
 import Dashboard from "../pages/dashboard";
 import Groups from "@/pages/groups";
 import ProtectedRoute from "./protectedRoute"
-
+import QuizPage from "@/pages/quizpage";
 const routes = createBrowserRouter([
   {
     path: "/",
@@ -29,6 +29,14 @@ const routes = createBrowserRouter([
   {
     path: "/login",
     element: <SignUpPage />,
+  },
+  {
+    path: "/groups/:id/quiz/:quizId",
+    element: (
+      <ProtectedRoute>
+        <QuizPage />
+      </ProtectedRoute>
+    ),
   },
 ]);
 

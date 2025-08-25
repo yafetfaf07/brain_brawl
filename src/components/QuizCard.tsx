@@ -1,13 +1,19 @@
 import { Button } from "./ui/button";
-
+import { useNavigate } from "react-router";
 interface QuizCardProps {
   name:string;
   desc:string;
   time:string;
   length:number
+  id:string
+  quizId:string
 }
 
-const QuizCard:React.FC<QuizCardProps> = ({name,desc,time, length}) => {
+const QuizCard:React.FC<QuizCardProps> = ({name,desc,time, length,quizId, id}) => {
+  const navigate = useNavigate();
+  const navigateToQuizPage = () => {
+    navigate(`/groups/${id}/quiz/${quizId}`)
+  }
   return (
     <div className="bg-orange-50 border-2 border-orange-300 p-4 mt-4 rounded-lg">
       <div className="flex justify-between mt-2 mb-4">
@@ -23,7 +29,9 @@ const QuizCard:React.FC<QuizCardProps> = ({name,desc,time, length}) => {
       </div>
       <div className="flex justify-between mt-4">
     <span className="text-red-400 font-semibold">Quiz created at: {time}</span>
-    <Button className="bg-orange-500 text-white rounded-lg">Start Quiz</Button>
+    <Button className="bg-orange-500 text-white rounded-lg" onClick={() => {
+      navigateToQuizPage();
+    }}>Start Quiz</Button>
       </div>
     </div>
   );
