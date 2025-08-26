@@ -355,7 +355,9 @@ const Groups = () => {
                   </DrawerFooter>
                 </DrawerContent>
               </Drawer>
-              <DropdownMenuItem className="bg-yellow-200 text-yellow-700">
+              <DropdownMenuItem className="bg-yellow-200 text-yellow-700" onClick={() => {
+                navigate(`/leaderboard`)
+              }}>
                 View LeaderBoard
               </DropdownMenuItem>
             </DropdownMenuContent>

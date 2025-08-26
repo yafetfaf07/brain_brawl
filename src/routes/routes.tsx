@@ -40,7 +40,7 @@ const routes = createBrowserRouter([
     ),
   },
   {
-    path: "/groups/:id/leaderboard",
+    path: "/leaderboard",
     element: (
       <ProtectedRoute>
         <LeaderBoard />
