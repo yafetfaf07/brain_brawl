@@ -1,11 +1,11 @@
-import DashBoardCard from "@/components/DashBoardCard";
-import DashboardNotify from "@/components/DashboardNotify";
-import InvitedDashboardCard from "@/components/InvitedDashboardCard";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/utils/supabase";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import createGroup from "@/services/groupCreate";
+import { supabase } from "@/utils/supabase";
 import { jwtDecode } from "jwt-decode";
+import { Toaster } from "@/components/ui/sonner";
+import { CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import DashBoardCard from "@/components/DashBoardCard";
+import DashboardNotify from "@/components/DashboardNotify";
+import InvitedDashboardCard from "@/components/InvitedDashboardCard";
+import createGroup from "@/services/groupCreate";
 
 // Define the type for the Supabase JWT payload
 type SupabaseToken = {
@@ -37,55 +40,60 @@ type UserGroups = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  // State variables for user and group data
-  const [uid, setuid] = useState<string>("");
-  const [gname, setgname] = useState<string>("");
-  const [gdesc, setgdesc] = useState<string>("");
-  const [name, setname] = useState<string>("");
-  const [gdata,setgdata]=useState<boolean>(true);
-  // Correctly initialize the groups state as an empty array
-  const [groups, setgroups] = useState<UserGroups[]>([]);
+  const [uid, setUid] = useState<string>("");
+  const [gname, setGname] = useState<string>("");
+  const [gdesc, setGdesc] = useState<string>("");
+  const [name, setName] = useState<string>("");
+  const [gdata, setGdata] = useState<boolean>(true);
+  const [groups, setGroups] = useState<UserGroups[]>([]);
 
-  // Function to handle user logout
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
-
     if (error) {
       console.error("Error: ", error);
+      toast.error("Failed to sign out. Please try again.", {
+        duration: 5000,
+      });
     } else {
       localStorage.clear();
       navigate("/");
-      console.log("successfully signed out");
+      toast.success("Successfully signed out!", {
+        duration: 5000,
+      });
     }
   };
 
-  // useEffect hook to fetch user data and groups on component mount
   useEffect(() => {
     async function getUserId() {
       const token = localStorage.getItem("accessToken");
       if (!token) {
         console.error("No token found.");
+        toast.error("No authentication token found. Please sign in.", {
+          duration: 5000,
+        });
+        navigate("/");
         return;
       }
 
       const decoded: SupabaseToken = jwtDecode(token);
-
-      // Step 1: Find the user in the "user" table using the JWT sub (uid)
       const { data: userData, error: userError } = await supabase
         .from("user")
-        .select("id, name") // Fetch only the required fields
+        .select("id, name")
         .eq("uid", decoded.sub)
-        .single(); // Use .single() as we expect only one user
+        .single();
 
       if (userError || !userData) {
         console.error("User ID fetching failed or user not found:", userError);
+        toast.error("Failed to fetch user data. Please sign in again.", {
+          duration: 5000,
+        });
+        navigate("/");
         return;
       }
 
-      setuid(userData.id);
-      setname(userData.name);
+      setUid(userData.id);
+      setName(userData.name);
 
-      // Step 2: Fetch the user's groups with roles
       const { data: userGroups, error: groupError } = await supabase
         .from("usergroup")
         .select(
@@ -95,39 +103,75 @@ const Dashboard = () => {
           `
         )
         .eq("uid", userData.id);
-        
+
       if (groupError) {
         console.error("Error fetching groups with roles:", groupError);
+        toast.error("Failed to load groups. Please try again.", {
+          duration: 5000,
+        });
       } else if (userGroups) {
         console.log("Groups with roles for user:", userGroups);
-        setgdata(false);
-        // Assert the data type to match the state type
-        setgroups(userGroups as unknown as UserGroups[]);
+        setGroups(userGroups as unknown as UserGroups[]);
+        setGdata(false);
       }
     }
     getUserId();
-  }, []); // Empty dependency array means this effect runs once on mount
+  }, [navigate]);
+
+  const handleCreateGroup = async () => {
+    try {
+      await createGroup(gname, gdesc, uid);
+      toast.success(`Group "${gname}" created successfully!`, {
+        duration: 5000,
+      });
+      // Refresh groups after creation
+      const { data: userGroups, error: groupError } = await supabase
+        .from("usergroup")
+        .select(
+          `
+            role,
+            group:group!inner(id, name, description)
+          `
+        )
+        .eq("uid", uid);
+      if (groupError) {
+        console.error("Error fetching updated groups:", groupError);
+        toast.error("Failed to refresh groups. Please try again.", {
+          duration: 5000,
+        });
+      } else if (userGroups) {
+        setGroups(userGroups as unknown as UserGroups[]);
+      }
+      setGname("");
+      setGdesc("");
+    } catch (error) {
+      console.error("Group creation failed:", error);
+      toast.error("Failed to create group. Please try again.", {
+        duration: 5000,
+      });
+    }
+  };
 
   return (
     <div>
+      <Toaster
+        position="top-center"
+        richColors
+        icons={{
+          success: <CheckCircle className="h-5 w-5 text-green-500" />,
+          error: <XCircle className="h-5 w-5 text-red-500" />,
+        }}
+      />
       <div className="flex justify-between m-3">
         <h2 className="pl-2 pt-1 text-3xl font-bold md:pt-3 md:pl-3">
           Hello, {name}
         </h2>
-
-        <Button
-          onClick={() => {
-            logout();
-          }}
-        >
-          Logout
-        </Button>
+        <Button onClick={logout}>Logout</Button>
       </div>
       <div className="flex flex-col md:flex-row justify-between p-2">
         <span className="pb-2 text-2xl font-normal">
           Manage your groups and collaborations
         </span>
-
         <Dialog>
           <DialogTrigger>
             <Button className="bg-gradient-to-r from-violet-500 to-indigo-400 m-2 w-[93%] md:w-30">
@@ -140,19 +184,19 @@ const Dashboard = () => {
               <DialogDescription>
                 <span className="pt-2">Name</span>
                 <Input
-                  className=" mb-2"
-                  onChange={(e) => setgname(e.target.value)}
+                  className="mb-2"
+                  onChange={(e) => setGname(e.target.value)}
+                  value={gname}
                 />
                 <span className="">Description</span>
                 <Input
                   className="mt-2"
-                  onChange={(e) => setgdesc(e.target.value)}
+                  onChange={(e) => setGdesc(e.target.value)}
+                  value={gdesc}
                 />
                 <Button
                   className="bg-gradient-to-r from-violet-500 to-indigo-400 mt-2 w-[93%] md:w-30"
-                  onClick={async () => {
-                    await createGroup(gname, gdesc, uid);
-                  }}
+                  onClick={handleCreateGroup}
                 >
                   Create group
                 </Button>
@@ -161,37 +205,38 @@ const Dashboard = () => {
           </DialogContent>
         </Dialog>
       </div>
-
       <div className="flex flex-col items-center justify-around md:flex-row">
         <DashboardNotify />
         <DashboardNotify />
         <DashboardNotify />
       </div>
       <h2 className="text-center text-2xl font-semibold m-5">My Groups</h2>
-
-      <div className="flex flex-col items-center justify-center md:flex-row flex-wrap md:justify-normal ">
-        {/* Conditional rendering for groups */}
-
-        {
-          gdata ? (<Skeleton className="w-[93%] md:w-[400px] rounded-full bg-red-400"/>) :groups.length > 0 ? (
-            groups.map((d) => (
-              <DashBoardCard
-              id={d.group.id}
-                key={d.group.id} // Use the group ID as the key
-                names={d.group.name}
-                role={d.role}
-                description={d.group.description}
+      <div className="flex flex-col items-center justify-center md:flex-row flex-wrap md:justify-normal">
+        {gdata ? (
+          // Render multiple skeletons to mimic DashBoardCard layout
+          Array(3)
+            .fill(0)
+            .map((_, index) => (
+              <Skeleton
+                key={index}
+                className="w-[93%] md:w-[400px] h-[200px] m-2 rounded-lg bg-gray-200"
               />
             ))
-          ) : (
-            <p className="text-center text-lg mt-10">No groups found.</p>
-          )
-        }
-      
+        ) : groups.length > 0 ? (
+          groups.map((d) => (
+            <DashBoardCard
+              id={d.group.id}
+              key={d.group.id}
+              names={d.group.name}
+              role={d.role}
+              description={d.group.description}
+            />
+          ))
+        ) : (
+          <p className="text-center text-lg mt-10">No groups found.</p>
+        )}
       </div>
-      <h2 className="text-center text-2xl font-semibold m-5">
-        Group Invitations
-      </h2>
+      <h2 className="text-center text-2xl font-semibold m-5">Group Invitations</h2>
       <div className="flex flex-col items-center justify-center md:flex-row">
         <InvitedDashboardCard />
       </div>

@@ -5,6 +5,7 @@ import Dashboard from "../pages/dashboard";
 import Groups from "@/pages/groups";
 import ProtectedRoute from "./protectedRoute"
 import QuizPage from "@/pages/quizpage";
+import LeaderBoard from "@/pages/leaderboard";
 const routes = createBrowserRouter([
   {
     path: "/",
@@ -35,6 +36,14 @@ const routes = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <QuizPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/groups/:id/leaderboard",
+    element: (
+      <ProtectedRoute>
+        <LeaderBoard />
       </ProtectedRoute>
     ),
   },
