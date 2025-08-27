@@ -6,17 +6,33 @@ import { Toaster } from "@/components/ui/sonner";
 import { CheckCircle, XCircle } from "lucide-react";
 import QuestionCard from "@/components/QuestionCard";
 import { toast } from "sonner"
+import { jwtDecode } from "jwt-decode";
 interface QuizItem {
   id: string;
   [key: string]: string;
+}
+interface Point {
+  uid:string;
+  gid:string;
+  total_points:number;
+  created_at:string;
 }
 
 type QuizData = QuizItem[];
 
 const QuizPage = () => {
-  const { quizId } = useParams<{ quizId: string }>();
+  const { id,quizId } = useParams<{ quizId: string, id:string }>();
   const [questions, setQuestions] = useState<QuizData>([]);
   const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({}); // Store user answers
+  const[hasPoints,sethasPoints] = useState<boolean>(false);
+  const[hasData,sethasData] = useState<Point>({
+    created_at:"",
+    gid:"",
+    total_points:0,
+    uid:""
+  });
+  const accessToken = localStorage.getItem('accessToken');
+  const decodedId = jwtDecode(accessToken!);
 
   useEffect(() => {
     const fetchQuizPage = async () => {
@@ -33,7 +49,20 @@ const QuizPage = () => {
         setQuestions(data[0].questions);
       }
     };
+
+    const checkPoints = async() => {
+      const{data,error} = await supabase.from('point').select('*').eq('gid',id ).eq('uid',decodedId.sub).single();
+      if(error) {
+        console.error("Error in checking point data: ", error);
+      }
+      if(data) {
+        console.log(data);
+        sethasData(data)
+        sethasPoints(true);
+      }
+    }
     fetchQuizPage();
+    checkPoints();
   }, [quizId]);
 
   // Callback to update user answers
@@ -45,7 +74,8 @@ const QuizPage = () => {
   };
 
   // Handle quiz submission
-  const handleCompleteQuiz = () => {
+  const handleCompleteQuiz = async() => {
+    console.log("state of hasPoints: ",hasPoints);
     let correctCount = 0;
     questions.forEach((question) => {
       const questionId = question.id;
@@ -60,11 +90,36 @@ const QuizPage = () => {
     const scorePercentage = ((correctCount / totalQuestions) * 100).toFixed(2);
     const message = `Quiz completed! You got ${correctCount} out of ${totalQuestions} correct (${scorePercentage}%).`;
 console.log(`${correctCount} / ${totalQuestions}`);
-
+      
     toast.success(message, {
       description: "Great job! Check your results or try another quiz.",
       duration: 5000,
     });
+    if(hasPoints==false) {
+      const dataPoint = {
+        uid:decodedId.sub,
+        gid:id,
+        total_points:correctCount
+      }
+      const{data,error} = await supabase.from('point').insert(dataPoint).eq('gid',id).eq('uid',decodedId.sub);
+      if(error) {
+        console.error("Inseting point data failed: ",error);
+        return
+      }
+      console.log("Successfully inserted data: ", data);
+
+    }
+    else if(hasPoints) {
+      console.log("Correct count from haspoints being true",correctCount)
+      const{data,error} = await supabase.from("point").update({total_points:hasData.total_points + correctCount}).eq('gid',id).eq('uid',decodedId.sub)
+      if(error) {
+        console.error("Error in updating point", error)
+        return
+      }
+      else if(data) {
+        console.log("successfully recorded data: ",data);
+      }
+    }
   };
 
   return (
