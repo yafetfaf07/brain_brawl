@@ -15,7 +15,7 @@ const Login = () => {
 
   useEffect(() => {
     if (isSuccessful) {
-      toast("Login successful! Redirecting to dashboard...");
+      toast.success("Login successful! Redirecting to dashboard...");
       // Delay navigation to allow the toast to be visible
       const timer = setTimeout(() => {
         navigate("/dashboard");

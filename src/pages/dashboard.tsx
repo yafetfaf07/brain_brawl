@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashBoardCard from "@/components/DashBoardCard";
 import DashboardNotify from "@/components/DashboardNotify";
-import InvitedDashboardCard from "@/components/InvitedDashboardCard";
 import createGroup from "@/services/groupCreate";
 
 // Define the type for the Supabase JWT payload
@@ -235,10 +234,6 @@ const Dashboard = () => {
         ) : (
           <p className="text-center text-lg mt-10">No groups found.</p>
         )}
-      </div>
-      <h2 className="text-center text-2xl font-semibold m-5">Group Invitations</h2>
-      <div className="flex flex-col items-center justify-center md:flex-row">
-        <InvitedDashboardCard />
       </div>
     </div>
   );

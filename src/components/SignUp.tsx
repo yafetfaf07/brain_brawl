@@ -26,17 +26,30 @@ const SignUp = () => {
     });
 
     if (error) {
-      alert(error)
-      console.error("Signup error:", error);
-      toast.error("Signup failed. Please check your email or password.", {
+      if(error.message=="User already registered") {
+   console.error("Signup error:", error.message);
+      toast.error("Signup failed. User already exists", {
         duration: 5000,
-      });
+      })
+      }
+      else if(error.message=="Signup requires a valid password") {
+   console.error("Signup error:", error.message);
+      toast.error("Signup requires a valid password", {
+        duration: 5000,
+      })
+      }
+   ;
       return;
     }
 
     if (data.user) {
       console.log("User ID:", data.user.id);
       const uid = data.user.id;
+      toast.success("Registered Successfully now login to your account", {
+        duration:5000
+      })
+     
+
       const { data: insertedData, error: insertError } = await supabase
         .from("user")
         .insert({ name, email, uid });
@@ -50,15 +63,13 @@ const SignUp = () => {
       }
 
       if (insertedData) {
-        alert("Success")
         console.log("Data saved successfully inside");
         toast.success("Account created successfully! Redirecting to dashboard...", {
           duration: 5000,
         });
         // Delay navigation to allow toast to be visible
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 2000);
+          // navigate("/dashboard");
+      
       }
     }
   };
