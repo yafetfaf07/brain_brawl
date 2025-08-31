@@ -29,7 +29,8 @@ const fetchPointData = async() => {
 const { data, error } = await supabase
   .from("point")
   .select("uid, total_points, user!inner(name, email, uid)")
-  .eq("gid", id);
+  .eq("gid", id)
+  .order("total_points", { ascending: false });
   if(error) {
     console.error("Error happened in leaderBoard: ", error);
     return
