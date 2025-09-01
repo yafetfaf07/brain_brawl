@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import DashboardNotify from "../components/DashboardNotify";
 
 const MainPage = () => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -72,8 +71,7 @@ const changedDate = new Date(date);
       </div>
 
       <div>
-        <DashboardNotify />
-        <DashboardNotify />
+      
       </div>
       <div>
         <span>contact_logo</span>
