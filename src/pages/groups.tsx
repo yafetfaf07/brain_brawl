@@ -32,6 +32,8 @@ import { ArrowLeft, EllipsisVertical, Mail, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/utils/supabase";
+import { toast } from "sonner";
+import { CheckCircle, XCircle } from "lucide-react"; // For toast icons
 
 const Groups = () => {
   type QuizDatas = {
@@ -69,6 +71,7 @@ const Groups = () => {
   const [, setquizName] = useState<string>();
   const [, setquizdesc] = useState<string>();
   const [totalNumberOfUsers, setotalNumberOfUsers] = useState<number>(0);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const groupData = async () => {
@@ -116,7 +119,7 @@ const Groups = () => {
     groupData();
     getQuizzes();
     getTotalNumberOfUsers();
-  }, []);
+  }, [open]);
 
   const ai = new GoogleGenAI({
     apiKey: "AIzaSyAPCr2YB4PdVLmMb0LhocHJDiYoMKtv2Tg",
@@ -135,7 +138,13 @@ const Groups = () => {
   };
 
   const handleUploadToSupabase = async () => {
-    if (!file) return alert("Please select a pdf file first");
+    if (!file) {
+      toast.error("Please select a PDF file first.", {
+        duration: 5000,
+        icon: <XCircle className="h-5 w-5 text-red-500" />,
+      });
+      return;
+    }
 
     try {
       const { data: fileUrl, error } = await supabase.storage
@@ -147,7 +156,7 @@ const Groups = () => {
       const pdfText = await extractTextFromPDF(file);
 
       if (pdfText) {
-        console.log("Content of pdf: ", pdfText);
+        console.log("Content of PDF: ", pdfText);
       }
       const response = await ai.models.generateContent({
         model: "gemini-2.0-flash-001",
@@ -182,15 +191,27 @@ const Groups = () => {
 
         if (error) {
           console.error("Error happened when inserting quiz: ", error);
+          toast.error(`Failed to save quiz: ${error.message}`, {
+            duration: 5000,
+            icon: <XCircle className="h-5 w-5 text-red-500" />,
+          });
           return;
         } else if (data) {
           console.log("Successfully inserted quiz: ", data);
           setquizData((prev) => [...prev, ...data]); // Append new quiz data
+          toast.success("Quiz created successfully!", {
+            duration: 3000,
+            icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+          });
+          setOpen(false); // Close the dialog after success
         }
       }
     } catch (error) {
       console.error("Error processing file:", error);
-      alert("Failed to process PDF or generate questions");
+      toast.error("Failed to process PDF or generate questions", {
+        duration: 5000,
+        icon: <XCircle className="h-5 w-5 text-red-500" />,
+      });
     }
   };
 
@@ -240,8 +261,8 @@ const Groups = () => {
               <EllipsisVertical />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <Dialog>
-                <DialogTrigger className="bg-purple-200 text-purple-700">
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger className="bg-purple-200 text-purple-700 w-full text-left mb-[2px] p-2">
                   Create Quiz
                 </DialogTrigger>
                 <DialogContent>
@@ -249,28 +270,27 @@ const Groups = () => {
                     <DialogTitle>Create New Quiz</DialogTitle>
                     <span>Set up your quiz details and settings.</span>
                     <DialogDescription>
-                      <div>
+                      <div className="mb-4">
                         <span>Quiz Title</span>
                         <Input
                           placeholder="e.g. Introduction to Project Management"
                           onChange={(e) => setqtitle(e.target.value)}
                         />
                       </div>
-                      <div>
+                      <div className="mb-4">
                         <span>Description</span>
                         <Input
                           placeholder="e.g. Introduction to Project Management"
                           onChange={(e) => setqdesc(e.target.value)}
                         />
                       </div>
-                      <div>
+                      <div className="mb-4">
                         <span>Choose files</span>
-                        <input
-                          type="file"
-                          onChange={(e) => handleFileChange(e)}
-                        />
-                        <Button onClick={() => handleUploadToSupabase()}>
-                          Confirm file
+                        <Input type="file" onChange={handleFileChange} />
+                        <Button className="bg-gradient-to-r from-violet-500 to-indigo-400 m-2 w-[93%] md:w-30 hover:from-indigo-400 hover:to-violet-500 hover:duration-500" onClick={() => {
+                          handleUploadToSupabase();
+                        }}>
+                          Generate Quiz
                         </Button>
                       </div>
                     </DialogDescription>
@@ -279,7 +299,9 @@ const Groups = () => {
               </Dialog>
 
               <Drawer>
-                <DrawerTrigger>Add Members</DrawerTrigger>
+                <DrawerTrigger className="text-green-700 bg-green-200 w-[100%] flex items-center mb-[2px] p-2">
+                  Add Members
+                </DrawerTrigger>
                 <DrawerContent>
                   <DrawerHeader>
                     <DrawerTitle>Add Members to Group</DrawerTitle>
@@ -355,9 +377,12 @@ const Groups = () => {
                   </DrawerFooter>
                 </DrawerContent>
               </Drawer>
-              <DropdownMenuItem className="bg-yellow-200 text-yellow-700" onClick={() => {
-                navigate(`/groups/${id}/leaderboard`);
-              }}>
+              <DropdownMenuItem
+                className="bg-yellow-300 text-yellow-700 p-3"
+                onClick={() => {
+                  navigate(`/groups/${id}/leaderboard`);
+                }}
+              >
                 View LeaderBoard
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -382,22 +407,13 @@ const Groups = () => {
           </div>
           <div className="flex justify-between mt-5 bg-gray-300">
             <div
-              className="bg-gray-100 rounded-none text-black w-[32%] p-2 text-center"
+              className="bg-gray-100 rounded-none text-black w-[100%] p-2 text-center"
               onClick={() => {
                 setquizzes(true);
                 setflashcards(false);
               }}
             >
               Quizzes
-            </div>
-            <div
-              className="bg-inherit text-black w-[32%] p-2 text-center"
-              onClick={() => {
-                setquizzes(false);
-                setflashcards(true);
-              }}
-            >
-              Flashcards
             </div>
           </div>
           <h2 className="text-2xl font-bold">Current Quizzes</h2>

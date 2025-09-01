@@ -205,9 +205,7 @@ const Dashboard = () => {
         </Dialog>
       </div>
       <div className="flex flex-col items-center justify-around md:flex-row">
-        <DashboardNotify />
-        <DashboardNotify />
-        <DashboardNotify />
+        <DashboardNotify no={groups.length} />
       </div>
       <h2 className="text-center text-2xl font-semibold m-5">My Groups</h2>
       <div className="flex flex-col items-center justify-center md:flex-row flex-wrap md:justify-normal">
